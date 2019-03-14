@@ -15,9 +15,27 @@
   let selectedCountry = "mx";
 
   const beersData = {
-    mx: [{ name: "Victoria", popularity: 50 }],
-    de: [],
-    us: []
+    mx: [
+      { name: "Pacífico", popularity: 8 },
+      { name: "Dos Equis", popularity: 6 },
+      { name: "Modelo Especial", popularity: 11 },
+      { name: "Negra Modelo", popularity: 17 },
+      { name: "Victoria", popularity: 25 }
+    ],
+    de: [
+      { name: "Becks", popularity: 50 },
+      { name: "Veltins", popularity: 20 },
+      { name: "Warsteiner", popularity: 27 },
+      { name: "Bitburger", popularity: 39 },
+      { name: "Erdinger", popularity: 11 }
+    ],
+    us: [
+      { name: "Bud Light", popularity: 15.4 },
+      { name: "Coors Light", popularity: 7.7 },
+      { name: "Budweiser", popularity: 6.2 },
+      { name: "Miller Lite", popularity: 6.1 },
+      { name: "Corona Extra", popularity: 4.1 }
+    ]
   };
 
   const getSVGWidth = () => SIZE.width + MARGIN.left + MARGIN.right;
@@ -78,16 +96,19 @@
       });
   };
 
+  const updateLabels = $selection => {
+    $selection.attr("transform", d => `translate(${50} ${yScale(d3.mean(d))})`);
+    // TODO: update texts
+  };
+
   const renderLabels = ($selection, data) => {
-    const $labels = $selection
-      .selectAll(".label")
-      .data(data)
+    const $labels = $selection.selectAll(".label").data(data);
+
+    $labels
       .enter()
       .append("g")
       .attr("class", "label")
-      .attr("transform", d => `translate(${50} ${yScale(d3.mean(d))})`);
-
-    $labels
+      .call(updateLabels)
       .append("line")
       .attr("x1", 0)
       .attr("x2", 300)
@@ -96,21 +117,28 @@
       .attr("stroke", "#000")
       .attr("stroke-dasharray", "6 6")
       .attr("stroke-width", 3);
+
+    $labels.transition().call(updateLabels);
+  };
+
+  const updateBars = $selection => {
+    $selection.attr("y", d => yScale(d[0])).attr("height", d => yScale(d[1]));
   };
 
   const renderBars = ($selection, data) => {
-    const $bars = $selection
-      .selectAll(".bar")
-      .data(data)
+    const $bars = $selection.selectAll(".bar").data(data);
+
+    $bars
       .enter()
       .append("rect")
       .attr("class", "bar")
       .attr("x", 0)
       .attr("width", SIZE.width)
-      .attr("y", d => yScale(d[0]))
-      .attr("height", d => yScale(d[1]))
+      .call(updateBars)
       .attr("clip-path", "url(#bottle-clipPath)")
       .attr("fill", (d, i) => BEER_COLORS[i]);
+
+    $bars.transition().call(updateBars);
   };
 
   const renderBottleBorder = $selection => {
@@ -141,16 +169,23 @@
       .attr("stroke", "#ffffff66");
   };
 
+  const updateSVGSize = $selection => {
+    $selection.attr("width", getSVGWidth).attr("height", getSVGHeight);
+  };
+
   const render = () => {
     yScale = d3.scaleLinear().range([0, SIZE.height]);
 
-    const data = [10, 30, 50, 40, 5];
+    const data = beersData[selectedCountry].sort(
+      (a, b) => b.popularity - a.popularity
+    );
 
-    yScale.domain([0, d3.sum(data)]);
+    yScale.domain([0, d3.sum(data, d => d.popularity)]);
 
-    const stackData = stackGenerator(data.sort((a, b) => b - a));
+    const stackData = stackGenerator(data.map(d => d.popularity));
 
     $svg
+      .call(updateSVGSize)
       .call(renderLabels, stackData)
       .call(renderBars, stackData)
       .call(renderBottleBorder)
@@ -165,8 +200,7 @@
       .append("svg")
       .attr("viewBox", `0 0 ${getSVGWidth()} ${getSVGHeight()}`)
       .call(addBottleMask)
-      .attr("width", getSVGWidth)
-      .attr("height", getSVGHeight)
+      .call(updateSVGSize)
       .append("g")
       .attr("transform", `translate(${MARGIN.left}, ${MARGIN.top})`);
 
