@@ -96,19 +96,22 @@
       });
   };
 
-  const updateLabels = $selection => {
+  const updateLabels = ($selection, labels) => {
     $selection.attr("transform", d => `translate(${50} ${yScale(d3.mean(d))})`);
+
+    $selection.select("text").text((d, i) => labels[i]);
     // TODO: update texts
   };
 
-  const renderLabels = ($selection, data) => {
+  const renderLabels = ($selection, data, labels) => {
     const $labels = $selection.selectAll(".label").data(data);
 
-    $labels
+    const $newLabels = $labels
       .enter()
       .append("g")
-      .attr("class", "label")
-      .call(updateLabels)
+      .attr("class", "label");
+
+    $newLabels
       .append("line")
       .attr("x1", 0)
       .attr("x2", 300)
@@ -117,8 +120,10 @@
       .attr("stroke", "#000")
       .attr("stroke-dasharray", "6 6")
       .attr("stroke-width", 3);
+    $newLabels.append("text").attr("x", 100);
 
-    $labels.transition().call(updateLabels);
+    $newLabels.call(updateLabels, labels);
+    $labels.transition().call(updateLabels, labels);
   };
 
   const updateBars = $selection => {
@@ -183,10 +188,13 @@
     yScale.domain([0, d3.sum(data, d => d.popularity)]);
 
     const stackData = stackGenerator(data.map(d => d.popularity));
+    const names = data.map(d => d.name);
+
+    // TODO: border is being added multiple times.
 
     $svg
       .call(updateSVGSize)
-      .call(renderLabels, stackData)
+      .call(renderLabels, stackData, names)
       .call(renderBars, stackData)
       .call(renderBottleBorder)
       .call(renderBubbles);
