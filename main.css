@@ -5,7 +5,13 @@ body {
 
 svg {
   display: block;
-  margin: 60px auto;
+  margin: 10px auto;
+}
+
+h1 {
+  text-align: center;
+  font-weight: 500;
+  font-size: 18px;
 }
 
 .bubble {

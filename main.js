@@ -47,6 +47,7 @@
       d3.sum(arr.slice(0, index)) + d
     ]);
 
+  // TODO: We may not need this function
   const appendBottlePath = $selection =>
     $selection
       .selectAll(".bottle")
@@ -121,10 +122,14 @@
       .attr("x2", 300)
       .attr("y1", 0)
       .attr("y2", 0)
-      .attr("stroke", "#000")
-      .attr("stroke-dasharray", "6 6")
+      .attr("stroke", "#d1d1d1")
+      .attr("stroke-dasharray", "3 6")
       .attr("stroke-width", 3);
-    $newLabels.append("text").attr("x", 100);
+    $newLabels
+      .append("text")
+      .attr("x", SIZE.width - 50)
+      .attr("y", -10)
+      .attr("text-anchor", "end");
 
     $newLabels.call(updateLabels, labels);
     $labels.transition().call(updateLabels, labels);
@@ -194,13 +199,10 @@
     const stackData = stackGenerator(data.map(d => d.popularity));
     const names = data.map(d => d.name);
 
-    // TODO: border is being added multiple times.
-
     $svg
       .call(updateSVGSize)
       .call(renderLabels, stackData, names)
       .call(renderBars, stackData)
-      .call(renderBottleBorder)
       .call(renderBubbles);
 
     renderCountries();
