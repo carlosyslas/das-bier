@@ -3,6 +3,22 @@
   const SIZE = { width: 280, height: 500 };
   const BEER_COLORS = ["#FED29A", "#E98253", "#CA5D40", "#B64C3F", "#973432"];
   const BOTTLE_SIZE = { width: 10, height: 10 };
+  const COUNTRIES = [
+    { code: "mx", name: "Mexico" },
+    { code: "de", name: "Germany" },
+    { code: "us", name: "US" }
+  ];
+
+  let colorScale;
+  let yScale;
+  let $svg;
+  let selectedCountry = "mx";
+
+  const beersData = {
+    mx: [{ name: "Victoria", popularity: 50 }],
+    de: [],
+    us: []
+  };
 
   const getSVGWidth = () => SIZE.width + MARGIN.left + MARGIN.right;
   const getSVGHeight = () => SIZE.height + MARGIN.top + MARGIN.bottom;
@@ -28,7 +44,6 @@
         .append("defs")
         .append("clipPath")
         .attr("id", "bottle-clipPath")
-        .call(appendBottlePath)
     ).attr("fill", "#000");
   };
 
@@ -41,34 +56,32 @@
     }).then(r => r.json());
   };
 
-  const setup = () => {
-    const $svg = d3
-      .select("#chart")
-      .append("svg")
-      .attr("viewBox", `0 0 ${getSVGWidth()} ${getSVGHeight()}`)
-      .call(addBottleMask)
-      .attr("width", getSVGWidth)
-      .attr("height", getSVGHeight)
-      .append("g")
-      .attr("transform", `translate(${MARGIN.left}, ${MARGIN.top})`);
+  const updateCountries = $selection => {
+    $selection
+      .text(d => d.name)
+      .classed("active", d => d.code === selectedCountry);
+  };
 
-    const colorScale = d3.scaleOrdinal().range(BEER_COLORS);
+  const renderCountries = () => {
+    const $countries = d3
+      .select(".country-selector")
+      .selectAll(".country")
+      .data(COUNTRIES)
+      .call(updateCountries)
+      .enter()
+      .append("li")
+      .attr("class", "country")
+      .call(updateCountries)
+      .on("click", d => {
+        selectedCountry = d.code;
+        render();
+      });
+  };
 
-    colorScale.domain(["beer1", "beer2", "beer3", "beer4", "beer5"]);
-
-    const yScale = d3.scaleLinear().range([0, SIZE.height]);
-
-    const data = [10, 30, 50, 40, 5];
-
-    console.log("data=", data, stackGenerator(data));
-
-    yScale.domain([0, d3.sum(data)]);
-
-    const stackData = stackGenerator(data.sort((a, b) => b - a));
-
-    const $labels = $svg
+  const renderLabels = ($selection, data) => {
+    const $labels = $selection
       .selectAll(".label")
-      .data(stackData)
+      .data(data)
       .enter()
       .append("g")
       .attr("class", "label")
@@ -83,10 +96,12 @@
       .attr("stroke", "#000")
       .attr("stroke-dasharray", "6 6")
       .attr("stroke-width", 3);
+  };
 
-    const $bars = $svg
+  const renderBars = ($selection, data) => {
+    const $bars = $selection
       .selectAll(".bar")
-      .data(stackData)
+      .data(data)
       .enter()
       .append("rect")
       .attr("class", "bar")
@@ -96,19 +111,23 @@
       .attr("height", d => yScale(d[1]))
       .attr("clip-path", "url(#bottle-clipPath)")
       .attr("fill", (d, i) => BEER_COLORS[i]);
+  };
 
-    appendBottlePath($svg)
+  const renderBottleBorder = $selection => {
+    appendBottlePath($selection)
       .attr("class", "border")
       .attr("stroke", "#333")
       .attr("fill", "transparent")
       .attr("stroke-width", 3);
+  };
 
+  const renderBubbles = $selection => {
     const randomX = d3.randomUniform(0, SIZE.width);
     const randomY = d3.randomUniform(0, SIZE.height);
     const randomR = d3.randomUniform(1, 4);
     const randomDelay = d3.randomUniform(0, 2);
 
-    const $bubbles = $svg
+    $selection
       .selectAll(".bubble")
       .data(Array.from(Array(50)))
       .enter()
@@ -120,15 +139,39 @@
       .attr("r", randomR)
       .attr("fill", "#ffffff33")
       .attr("stroke", "#ffffff66");
-
-    const response = getTrends(["Victoria"]);
-    console.log(response);
-    response.then(r => console.log("---", r));
   };
 
-  // 120.53 x 484.9
-  //.9698
-  //1.031140441
+  const render = () => {
+    yScale = d3.scaleLinear().range([0, SIZE.height]);
+
+    const data = [10, 30, 50, 40, 5];
+
+    yScale.domain([0, d3.sum(data)]);
+
+    const stackData = stackGenerator(data.sort((a, b) => b - a));
+
+    $svg
+      .call(renderLabels, stackData)
+      .call(renderBars, stackData)
+      .call(renderBottleBorder)
+      .call(renderBubbles);
+
+    renderCountries();
+  };
+
+  const setup = () => {
+    $svg = d3
+      .select("#chart")
+      .append("svg")
+      .attr("viewBox", `0 0 ${getSVGWidth()} ${getSVGHeight()}`)
+      .call(addBottleMask)
+      .attr("width", getSVGWidth)
+      .attr("height", getSVGHeight)
+      .append("g")
+      .attr("transform", `translate(${MARGIN.left}, ${MARGIN.top})`);
+
+    render();
+  };
 
   setup();
 })(window.d3);
